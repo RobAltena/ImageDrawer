@@ -39,16 +39,18 @@ public class ImageDrawer extends Application {
         Platform.runLater(this::onCalc);
     }
 
-    /**
-     *  Calculate all data that needs calculating just once. Then kick off the iterations and animations
-     */
-    private void onInit(){
+    @Override
+    public void init(){
+        OriginalImage = new Image("Mona_Lisa.png"); //"BlackSquare.png" is a simpler test image.
+
+        final int w = (int) OriginalImage.getWidth();
+        final int h = (int) OriginalImage.getHeight();
+        composition = new WritableImage(w, h); //Right image.
+
         ds = generateDataSet(OriginalImage);
         nn = CreateNN();
 
         // The x,y grid to calculate the NN output only needs to be calculated once.
-        int w = (int) composition.getWidth();
-        int h = (int) composition.getHeight();
         int numPoints = h * w;
         xyOut = Nd4j.zeros(numPoints, 2);
         for (int i = 0; i < w; i++) {
@@ -62,16 +64,12 @@ public class ImageDrawer extends Application {
             }
         }
         DrawImage();
-        Platform.runLater(this::onCalc);
     }
-
     /**
      * Standard JavaFX start: Build the UI, display
      */
     @Override
     public void start(Stage primaryStage) {
-
-        OriginalImage = new Image("Mona_Lisa.png"); //"BlackSquare.png" is a simpler test image.
 
         final int w = (int) OriginalImage.getWidth();
         final int h = (int) OriginalImage.getHeight();
@@ -82,7 +80,6 @@ public class ImageDrawer extends Application {
         iv1.setFitHeight( zoom* h);
         iv1.setFitWidth(zoom*w);
 
-        composition = new WritableImage(w, h); //Right image.
         ImageView iv2 = new ImageView();
         iv2.setImage(composition);
         iv2.setFitHeight( zoom* h);
@@ -96,8 +93,10 @@ public class ImageDrawer extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
+        Platform.setImplicitExit(true);
+
         //Allow JavaFX do to it's thing, Initialize the Neural network when it feels like it.
-        Platform.runLater(this::onInit);
+        Platform.runLater(this::onCalc);
     }
 
     public static void main( String[] args )

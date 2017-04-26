@@ -61,10 +61,10 @@ public class ImageDrawer extends Application {
         int numPoints = h * w;
         xyOut = Nd4j.zeros(numPoints, 2);
         for (int i = 0; i < w; i++) {
-            double xp = (double) i / (double) (w - 1);
+            double xp = scaleXY(i,w);
             for (int j = 0; j < h; j++) {
                 int index = i + w * j;
-                double yp = (double) j / (double) (h - 1);
+                double yp = scaleXY(j,h);
 
                 xyOut.put(index, 0, xp); //2 inputs. x and y.
                 xyOut.put(index, 1, yp);
@@ -131,16 +131,16 @@ public class ImageDrawer extends Application {
                 .updater(Updater.NESTEROVS).momentum(0.9)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
-                        .activation(Activation.IDENTITY)
+                        .activation(Activation.LEAKYRELU)
                         .build())
                 .layer(1, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-                        .activation(Activation.RELU)
+                        .activation(Activation.LEAKYRELU)
                         .build())
                 .layer(2, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-                        .activation(Activation.RELU)
+                        .activation(Activation.LEAKYRELU)
                         .build())
                 .layer(3, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-                        .activation(Activation.RELU)
+                        .activation(Activation.LEAKYRELU)
                         .build())
                 .layer(4, new OutputLayer.Builder(LossFunctions.LossFunction.L2)
                         .activation(Activation.IDENTITY)
@@ -171,11 +171,11 @@ public class ImageDrawer extends Application {
 
         //Simplest implementation first.
         for (int i = 0; i < w; i++) {
-            double xp = (double) i / (double) (w - 1);
+            double xp = scaleXY(i,w);
             for (int j = 0; j < h; j++) {
                 Color c = reader.getColor(i, j);
                 int index = i + w * j;
-                double yp = (double) j / (double) (h - 1);
+                double yp = scaleXY(j,h);
 
                 xy.put(index, 0, xp); //2 inputs. x and y.
                 xy.put(index, 1, yp);
@@ -217,5 +217,12 @@ public class ImageDrawer extends Application {
     private static double capNNOutput(double x) {
         double tmp = (x<0.0) ? 0.0 : x;
         return (tmp > 1.0) ? 1.0 : tmp;
+    }
+
+    /**
+     * scale x,y points
+     */
+    private static double scaleXY(int i, int maxI){
+        return (double) i / (double) (maxI - 1) -0.5;
     }
 }

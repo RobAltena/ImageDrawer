@@ -52,9 +52,6 @@ public class ImageDrawer extends Application {
 
     @Override
     public void init(){
-        UIServer uiServer = UIServer.getInstance();
-        StatsStorage statsStorage = new InMemoryStatsStorage();
-        uiServer.attach(statsStorage);
 
         originalImage = new Image("Mona_Lisa.png");
 
@@ -64,7 +61,14 @@ public class ImageDrawer extends Application {
 
         ds = generateDataSet(originalImage);
         nn = createNN();
-        nn.setListeners(new StatsListener(statsStorage));
+
+        boolean fUseUI = false; // set to false if you do not want the web ui to track learning progress.
+        if(fUseUI) {
+            UIServer uiServer = UIServer.getInstance();
+            StatsStorage statsStorage = new InMemoryStatsStorage();
+            uiServer.attach(statsStorage);
+            nn.setListeners(new StatsListener(statsStorage));
+        }
 
         // The x,y grid to calculate the NN output only needs to be calculated once.
         int numPoints = h * w;
@@ -136,7 +140,7 @@ public class ImageDrawer extends Application {
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(learningRate)
-                .weightInit(WeightInit.XAVIER)
+                .weightInit(WeightInit.RELU)
                 .updater(Updater.NESTEROVS).momentum(0.9)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)

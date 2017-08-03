@@ -21,8 +21,8 @@
     </build>
 
     <properties>
-        <nd4j.version>0.8.0</nd4j.version>
-        <dl4j.version>0.8.0</dl4j.version>
+        <nd4j.version>0.9.0</nd4j.version>
+        <dl4j.version>0.9.0</dl4j.version>
         <scala.binary.version>2.11</scala.binary.version>
     </properties>
 

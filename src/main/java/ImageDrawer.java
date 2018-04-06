@@ -9,7 +9,6 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -138,7 +137,6 @@ public class ImageDrawer extends Application {
      */
     private static MultiLayerNetwork createNN() {
         int seed = 2345;
-        int iterations = 10;
         double learningRate = 0.05;
         int numInputs = 2;   // x and y.
         int numHiddenNodes = 100;
@@ -146,11 +144,9 @@ public class ImageDrawer extends Application {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
-                .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(learningRate)
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Nesterovs(0.9))
+                .updater(new Nesterovs(learningRate, 0.9))
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
                         .activation(Activation.LEAKYRELU)
@@ -167,7 +163,10 @@ public class ImageDrawer extends Application {
                 .layer(4, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
                         .activation(Activation.LEAKYRELU)
                         .build())
-                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.L2)
+                .layer(5, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
+                        .activation(Activation.LEAKYRELU)
+                        .build())
+                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.L2)
                         .activation(Activation.IDENTITY)
                         .nIn(numHiddenNodes).nOut(numOutputs).build())
                 .pretrain(false).backprop(true).build();

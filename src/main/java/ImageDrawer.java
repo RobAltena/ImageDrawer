@@ -20,7 +20,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
@@ -49,8 +49,8 @@ public class ImageDrawer extends Application {
      * Training the NN and updating the current graphical output.
      */
     private void onCalc(){
-        int batchSize = 1000;
-        int numBatches = 5;
+        int batchSize = 3000;
+        int numBatches = 100;
         for (int i =0; i< numBatches; i++){
             DataSet ds = generateDataSet(batchSize);
             nn.fit(ds);
@@ -61,7 +61,7 @@ public class ImageDrawer extends Application {
 
     @Override
     public void init(){
-        // cat.jpg BlackSquare.png Mona_Lisa.png
+        // cat.jpg BlackSquare.png Mona_Lisa.png Mona_Lisa_2.png
         originalImage = new Image("Mona_Lisa_2.png");
 
         final int w = (int) originalImage.getWidth();
@@ -137,7 +137,7 @@ public class ImageDrawer extends Application {
      */
     private static MultiLayerNetwork createNN() {
         int seed = 2345;
-        double learningRate = 0.05;
+        double learningRate = 0.01;
         int numInputs = 2;   // x and y.
         int numHiddenNodes = 100;
         int numOutputs = 3 ; //R, G and B value.
@@ -146,27 +146,18 @@ public class ImageDrawer extends Application {
                 .seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Nesterovs(learningRate, 0.9))
+                .updater(new Adam(learningRate))
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
                         .activation(Activation.LEAKYRELU)
                         .build())
-                .layer(1, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
+                .layer(1, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes )
                         .activation(Activation.LEAKYRELU)
                         .build())
-                .layer(2, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
+                .layer(2, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes )
                         .activation(Activation.LEAKYRELU)
                         .build())
-                .layer(3, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-                        .activation(Activation.LEAKYRELU)
-                        .build())
-                .layer(4, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-                        .activation(Activation.LEAKYRELU)
-                        .build())
-                .layer(5, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-                        .activation(Activation.LEAKYRELU)
-                        .build())
-                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.L2)
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.L2)
                         .activation(Activation.IDENTITY)
                         .nIn(numHiddenNodes).nOut(numOutputs).build())
                 .pretrain(false).backprop(true).build();

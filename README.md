@@ -3,6 +3,9 @@ a JavaFX application using DeepLearning4J to show a neural network learning to d
 
 ![GitHub Logo](/images/screenshot.png)
 
+time lapsed video of this version:
+https://www.youtube.com/watch?v=WR1NfuA5t5k
+
 Video of an old version the application in action:
 https://www.youtube.com/watch?v=k8n9mnSXFYk
 

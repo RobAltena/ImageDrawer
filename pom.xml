@@ -21,8 +21,8 @@
     </build>
 
     <properties>
-        <nd4j.version>1.0.0-beta2</nd4j.version>
-        <dl4j.version>1.0.0-beta2</dl4j.version>
+        <nd4j.version>1.0.0-beta3</nd4j.version>
+        <dl4j.version>1.0.0-beta3</dl4j.version>
         <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
@@ -30,7 +30,7 @@
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-9.2-platform</artifactId>
+            <artifactId>nd4j-cuda-10.0</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
 

@@ -5,7 +5,6 @@ import javafx.scene.image.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -13,9 +12,6 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -69,14 +65,6 @@ public class ImageDrawer extends Application {
         composition = new WritableImage(w, h); //Right image.
 
         nn = createNN();
-
-        boolean fUseUI = false; // set to false if you do not want the web ui to track learning progress.
-        if(fUseUI) {
-            UIServer uiServer = UIServer.getInstance();
-            StatsStorage statsStorage = new InMemoryStatsStorage();
-            uiServer.attach(statsStorage);
-            nn.setListeners(new StatsListener(statsStorage));
-        }
 
         // The x,y grid to calculate the NN output only needs to be calculated once.
         int numPoints = h * w;
@@ -139,7 +127,7 @@ public class ImageDrawer extends Application {
         int seed = 2345;
         double learningRate = 0.01;
         int numInputs = 2;   // x and y.
-        int numHiddenNodes = 100;
+        int numHiddenNodes = 500;
         int numOutputs = 3 ; //R, G and B value.
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

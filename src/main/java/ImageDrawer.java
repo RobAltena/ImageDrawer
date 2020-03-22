@@ -1,4 +1,3 @@
-
 import org.datavec.image.loader.Java2DNativeImageLoader;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -19,10 +18,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Random;
 
 public class ImageDrawer {
 
@@ -32,14 +29,16 @@ public class ImageDrawer {
     private BufferedImage originalImage;
     private JLabel generatedLabel;
 
-    private int[] pixels;          // array of pixels of original image.
+    private INDArray blueMat; // color channels of he original image.
+    private INDArray greenMat;
+    private INDArray redMat;
+
     private INDArray xPixels; // x coordinates of the pixels for the NN.
     private INDArray yPixels; // y coordinates of the pixels for the NN.
 
     private INDArray xyOut; //x,y grid to calculate the output image. Needs to be calculated once, then re-used.
 
-    private Random r = new Random();
-    Java2DNativeImageLoader j2dNil;
+    private Java2DNativeImageLoader j2dNil; //Datavec class used to read and write images to /from INDArrays.
 
 
     private void init() throws IOException {
@@ -53,7 +52,6 @@ public class ImageDrawer {
 
         int width = originalImage.getWidth();
         int height = originalImage.getHeight();
-        pixels = originalImage.getRGB(0, 0, width, height, null, 0, width);
 
         final JLabel originalLabel = new JLabel(new ImageIcon(originalImage));
         generatedLabel = new JLabel(new ImageIcon(generatedImage));
@@ -65,12 +63,19 @@ public class ImageDrawer {
         mainFrame.add(generatedLabel);
 
         mainFrame.setSize(2*width, height +25);
-        mainFrame.setLayout(null);//using no layout managers
-        mainFrame.setVisible(true);//making the frame visible
+        mainFrame.setLayout(null);
+        mainFrame.setVisible(true);  // Show UI
 
-        j2dNil = new Java2DNativeImageLoader();
-        nn = createNN();
-        xyOut = calcGrid();
+
+        j2dNil = new Java2DNativeImageLoader(); //Datavec class used to read and write images.
+        nn = createNN(); // Create the neural network.
+        xyOut = calcGrid(); //Create a mesh used to generate the image.
+
+        // read the color channels from the original image.
+        INDArray imageMat = j2dNil.asMatrix(originalImage).castTo(DataType.DOUBLE).div(255.0);
+        blueMat = imageMat .tensorAlongDimension(1, 0, 2, 3).reshape(width * height, 1);
+        greenMat = imageMat .tensorAlongDimension(2, 0, 2, 3).reshape(width * height, 1);
+        redMat = imageMat .tensorAlongDimension(3, 0, 2, 3).reshape(width * height, 1);
 
         SwingUtilities.invokeLater(this::onCalc);
     }
@@ -126,7 +131,7 @@ public class ImageDrawer {
      * Training the NN and updating the current graphical output.
      */
     private void onCalc(){
-        int batchSize = 10000;
+        int batchSize = 1000;
         int numBatches = 10;
         for (int i =0; i< numBatches; i++){
             DataSet ds = generateDataSet(batchSize);
@@ -140,7 +145,7 @@ public class ImageDrawer {
     }
 
     /**
-     * Process a javafx Image to be consumed by DeepLearning4J.
+     * Take a batchsize of random samples from the source image.
      *
      * @param batchSize number of sample points to take out of the image.
      * @return DeepLearning4J DataSet.
@@ -149,30 +154,21 @@ public class ImageDrawer {
         int w = originalImage.getWidth();
         int h = originalImage.getHeight();
 
-        INDArray xy = Nd4j.zeros(batchSize, 2);
-        INDArray out = Nd4j.zeros(batchSize, 3);
-        float [] RGBColorComponents = new float[3];
+        INDArray xindex = Nd4j.rand(batchSize).muli(w-1).castTo(DataType.UINT32);
+        INDArray yindex = Nd4j.rand(batchSize).muli(h-1).castTo(DataType.UINT32);
 
-        INDArray xindex = Nd4j.rand(batchSize).muli(w).castTo(DataType.UINT32);
-        INDArray yindex = Nd4j.rand(batchSize).muli(h).castTo(DataType.UINT32);
+        INDArray xPos = xPixels.get(xindex).reshape(batchSize); // Look up the normalized positions pf the pixels.
+        INDArray yPos = yPixels.get(yindex).reshape(batchSize);
 
-        for (int index = 0; index < batchSize; index++) {
-            int i = xindex.getInt(index);
-            int j = yindex.getInt(index);
-            double xp = xPixels.getDouble(i); //scaleXY(i,w);
-            double yp = scaleXY(j,h);
+        INDArray xy =  Nd4j.vstack(xPos, yPos).transpose(); // Create the array that can be fed into the NN.
 
-            int indexPixel = j * w + i;
-            Color c = new Color(pixels[indexPixel]);
+        //Look up the correct colors fot our random pixels.
+        INDArray xyIndex = yindex.mul(w).add(xindex); //TODO: figure out the 2D version of INDArray.get.
+        INDArray b = blueMat.get(xyIndex).reshape(batchSize);
+        INDArray g = greenMat.get(xyIndex).reshape(batchSize);
+        INDArray r = redMat.get(xyIndex).reshape(batchSize);
+        INDArray out = Nd4j.vstack(r, g, b).transpose(); // Create the array that can be used for NN training.
 
-            xy.put(index, 0, xp); //2 inputs. x and y.
-            xy.put(index, 1, yp);
-
-            c.getRGBColorComponents(RGBColorComponents);
-            out.put(index, 0, RGBColorComponents[0]);  //3 outputs. the RGB values as 0-1 floats.
-            out.put(index, 1, RGBColorComponents[1]);
-            out.put(index, 2, RGBColorComponents[2]);
-        }
         return new DataSet(xy, out);
     }
 
@@ -204,17 +200,13 @@ public class ImageDrawer {
     private INDArray calcGrid(){
         int w = originalImage.getWidth();
         int h = originalImage.getHeight();
-
-        xPixels = Nd4j.linspace(-0.5, 0.5, w, DataType.DOUBLE);
-        yPixels = Nd4j.linspace(-0.5, 0.5, h, DataType.DOUBLE);
+        xPixels = Nd4j.linspace(-1.0, 1.0, w, DataType.DOUBLE);
+        yPixels = Nd4j.linspace(-1.0, 1.0, h, DataType.DOUBLE);
         INDArray [] mesh = Nd4j.meshgrid(xPixels, yPixels);
-        return Nd4j.vstack(mesh[0].ravel(), mesh[1].ravel()).transpose();
-    }
 
-    /**
-     * scale x,y points
-     */
-    private static double scaleXY(int i, int maxI){
-        return (double) i / (double) (maxI - 1) -0.5;
+        xPixels = xPixels.reshape(w, 1); // This is a hack to work around a bug in INDArray.get()
+        yPixels = yPixels.reshape(h, 1); // in the dataset generation.
+
+        return Nd4j.vstack(mesh[0].ravel(), mesh[1].ravel()).transpose();
     }
 }
